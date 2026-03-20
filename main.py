@@ -54,7 +54,7 @@ def test_single_led(cube, frame):
 
 
 # Swap out the test pattern here to try different ones
-ACTIVE_TEST = test_layer_sweep
+ACTIVE_TEST = test_single_led
 
 def main():
     cube = Cube()
