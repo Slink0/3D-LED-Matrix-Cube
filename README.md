@@ -1,31 +1,52 @@
-# 3D-LED-Matrix-Cube
-CSCE 462 Final Project
-8×8×8 LED Matrix Cube
-Overview
+# CSCE 462 Final Project  
+## 8x8x8 LED Matrix Cube
 
-For this project, our group designed and built an 8×8×8 3D LED matrix cube. The system enables control of 512 LEDs arranged in a cubic structure, allowing for dynamic lighting patterns and 3D visual effects.
+## Overview
+This project involves the design and implementation of an **8×8×8 3D LED matrix cube**. The system integrates hardware and software to create dynamic lighting patterns in three dimensions, along with a real-time visualization.
 
-Hardware Design
+## Features
+- 512 LEDs arranged in an 8×8×8 cube structure  
+- Layered multiplexing for efficient control  
+- Real-time simulation using Python and Matplotlib  
+- Hardware-driven animations via Raspberry Pi  
 
-The cube is driven using a combination of shift registers and MOSFETs to efficiently control all LEDs:
+## Hardware Components
+- 8 × 74HC595 Shift Registers  
+- 8 × IRFZ44N MOSFETs  
+- Raspberry Pi (controller)  
+- 512 LEDs  
+- Supporting resistors, wiring, and power supply  
 
-8 × 74HC595 shift registers
-Used to control the columns of the LED matrix through serial-to-parallel data conversion.
-8 × IRFZ44N MOSFETs
-Used to switch each layer of the cube, enabling multiplexing across the 8 layers.
-System Architecture
-The cube operates using a layer multiplexing technique, where one layer is activated at a time.
-Shift registers handle column data, while MOSFETs control which layer is currently active.
-By rapidly cycling through layers, the system creates the illusion that all LEDs are lit simultaneously.
-Features
-512 individually addressable LEDs
-3D animation capability
-Efficient control using minimal microcontroller pins
-Expandable and modular design
-Future Improvements
-Add more complex animation patterns
-Implement brightness control using PWM
-Integrate audio-reactive or sensor-based effects
-Improve PCB design for compactness and reliability
-Contributors
+## System Architecture
+The cube is controlled using a combination of shift registers and MOSFETs:
+
+- **74HC595 Shift Registers** handle column data (LED states)  
+- **IRFZ44N MOSFETs** control each layer (8 layers total)  
+- **Multiplexing** is used to rapidly switch between layers, creating the illusion that all LEDs are lit simultaneously  
+
+## Software
+- The Raspberry Pi runs control code to:
+  - Send data to the shift registers  
+  - Manage timing for multiplexing  
+  - Generate animation patterns  
+
+- A **Matplotlib-based simulation** mirrors the physical cube in real time for debugging and visualization.
+
+## How It Works
+1. Data for a single layer is sent to the shift registers  
+2. The corresponding MOSFET activates that layer  
+3. The system rapidly cycles through all 8 layers  
+4. Persistence of vision creates a stable 3D image  
+
+## Applications
+- 3D visual displays  
+- Educational demonstrations of multiplexing and embedded systems  
+- Interactive lighting effects  
+
+## Future Improvements
+- Increase refresh rate for smoother animations  
+- Add user input or network control  
+- Implement more complex 3D animation algorithms  
+
+## Authors
 Nicolas Medina, Ty Macaulay
