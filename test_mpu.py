@@ -18,7 +18,7 @@ def main():
         sys.exit(1)
 
     print("Calibrating — keep the MPU6050 still for 2 seconds...")
-    mpu.calibrate(samples=200)
+    mpu.calibrate(samples=250)
     print("Calibration complete.\n")
     print(f"{'Roll (deg)':>15} {'Pitch (deg)':>15} {'Accel X':>10} {'Accel Y':>10} {'Accel Z':>10}")
     print("-" * 65)
