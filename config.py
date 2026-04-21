@@ -31,4 +31,8 @@ COLLISION_DAMPING = 0.8
 SPATIAL_HASH_CELL_SIZE = 1.0
 
 # Set True to use visualizer rotation as gyro input false for pi
-USE_VIRTUAL_GYRO = True
+USE_VIRTUAL_GYRO = False
+
+# Testing MPU without the cube
+USE_MPU_STREAM   = True
+MPU_STREAM_PORT = 5005
