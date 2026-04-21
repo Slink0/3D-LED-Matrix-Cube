@@ -68,7 +68,7 @@ def run_fluid(cube, sim, gravity):
 RUN_FLUID = True
 
 # Swap out the test pattern here to try different ones
-ACTIVE_TEST = test_layer_sweep
+ACTIVE_TEST = test_single_led
 
 
 def main():
