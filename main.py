@@ -2,6 +2,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 from display.cube import Cube
 from visualize.VisualizeCube import VisualizeCube
+from config import USE_VIRTUAL_GYRO
 
 def test_layer_sweep(cube, frame):
     """Sweeps a full layer of LEDs along the Z axis one at a time."""
@@ -50,18 +51,67 @@ def test_single_led(cube, frame):
     z = idx % cube.size
     cube.set_led(x, y, z, True)
 
-# add def run_fluid later to test fluids
+def run_fluid(cube, sim, gravity):
+    """
+    Steps the fluid simulation and writes the resulting voxels to the cube grid.
 
+    :param cube:    Cube instance
+    :param sim:     FluidSimulation instance
+    :param gravity: GravityVector instance
+    """
+    sim.step(gravity.get())
+    cube.clear()
+    for (x, y, z) in sim.get_voxels():
+        cube.set_led(x, y, z, True)
+
+# Set to True to run the fluid simulation, False to run a test pattern
+RUN_FLUID = True
 
 # Swap out the test pattern here to try different ones
 ACTIVE_TEST = test_layer_sweep
 
+
 def main():
+    from FluidSimulation.FluidLogic import FluidSimulation
+    from FluidSimulation.gravity import GravityVector
+
     cube = Cube()
     visualizer = VisualizeCube(cube)
 
-    def update(frame):
-        ACTIVE_TEST(cube, frame)
+    if RUN_FLUID:
+        sim = FluidSimulation()
+        gravity = GravityVector()
+
+        # Set up the MPU6050 if we are not using the virtual gyro
+        mpu = None
+        if not USE_VIRTUAL_GYRO:
+            try:
+                from hardware.mpu6050 import MPU6050
+                mpu = MPU6050()
+                mpu.connect()
+                mpu.calibrate()
+            except Exception as e:
+                print(f"[main] MPU6050 unavailable: {e}")
+                print("[main] Falling back to fixed gravity vector.")
+                mpu = None
+
+        def update(frame):
+            if USE_VIRTUAL_GYRO:
+                # Read view angles from the visualizer and pass to gravity
+                elev, azim = visualizer.get_view_angles()
+                gravity.set_from_visualizer(elev, azim)
+            elif mpu is not None:
+                # Read angles from the physical MPU6050 and pass to gravity
+                mpu.update()
+                roll, pitch = mpu.get_angles()
+                gravity.set_from_angles(roll, pitch)
+            # If neither is available, gravity stays as fixed downward default
+
+            run_fluid(cube, sim, gravity)
+
+    else:
+        def update(frame):
+            ACTIVE_TEST(cube, frame)
 
     visualizer.run(update_fn=update)
 
