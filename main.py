@@ -149,9 +149,16 @@ def main():
         sim = FluidSimulation()
         gravity, mpu, mpu_receive = setup_gravity()
 
-        # Low pass filter state for smooth gravity
-        prev_g = [0.0, 0.0, -9.8]
-        alpha = 0.7  # smoothing factor — lower = smoother but slower to respond
+        if mpu is not None:
+            mpu.update()
+            roll, pitch = mpu.get_angles()
+            gravity.set_from_angles(roll, pitch)
+            g = gravity.get()
+            prev_g = [g[0], g[1], g[2]]
+        else:
+            prev_g = [0.0, 0.0, -9.8]
+
+        alpha = 0.6
 
         def get_smooth_gravity():
             update_gravity(gravity, mpu, mpu_receive)
