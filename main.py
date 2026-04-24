@@ -1,4 +1,4 @@
-from config import USE_VIRTUAL_GYRO, USE_MPU_STREAM, RUN_ON_PI
+from config import USE_VIRTUAL_GYRO, USE_MPU_STREAM, RUN_ON_PI, RUN_FLUID
 
 # ─── Test Patterns ─────────────────────────────────────────────────────────────
 
@@ -131,7 +131,6 @@ def update_gravity(gravity, mpu, mpu_receive, visualizer=None):
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
 # Set to True to run the fluid simulation, False to run a test pattern
-RUN_FLUID = False
 
 
 def main():

@@ -30,6 +30,7 @@ COLLISION_DAMPING = 0.8
 SPATIAL_HASH_CELL_SIZE = 1.0
 
 RUN_ON_PI = True
+RUN_FLUID = True
 
 # Set True to use visualizer rotation as gyro input false for pi
 USE_VIRTUAL_GYRO = False
