@@ -143,7 +143,7 @@ def main():
         renderer = Renderer()
 
         if not RUN_FLUID:
-            renderer.test_layer_sweep()
+            renderer.test_sequence()
             renderer.cleanup()
             return
 

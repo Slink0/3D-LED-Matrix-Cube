@@ -28,10 +28,10 @@ class Renderer:
         :param cube: 8x8x8 numpy array of LED states (1 = on, 0 = off)
         """
         for z in range(8):
+            self.sr.all_layers_off()
             data = self.sr.cube_to_bytes(cube, z)
-            self.sr.set_layer(z, self._prev_layer)
             self.sr.write_columns(data)
-            self._prev_layer = z
+            GPIO.output(self.sr.layer_pins[z], 1)
             time.sleep(LAYER_DELAY)
 
     def render_voxels(self, cube):
