@@ -131,7 +131,7 @@ def update_gravity(gravity, mpu, mpu_receive, visualizer=None):
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
 # Set to True to run the fluid simulation, False to run a test pattern
-RUN_FLUID = True
+RUN_FLUID = False
 
 # Swap out the test pattern here to try different ones
 ACTIVE_TEST = test_layer_sweep
