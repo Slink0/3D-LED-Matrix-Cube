@@ -2,9 +2,11 @@
 CUBE_SIZE = 8
 
 #SN74HC595
-DATA_PIN = None
-CLOCK_PIN = None
-LATCH_PIN = None
+SPI_SPEED   = 13000000
+NUM_REGISTERS = 8
+LAYER_PINS = [5, 6, 12, 13, 16, 19, 20, 21]
+LATCH_PIN = 25
+LAYER_DELAY = 0.00005
 
 MPU6050_ADDRESS = 0x68
 
@@ -27,9 +29,11 @@ COLLISION_DAMPING = 0.8
 # size for spatial hashing grid
 SPATIAL_HASH_CELL_SIZE = 1.0
 
+RUN_ON_PI = True
+
 # Set True to use visualizer rotation as gyro input false for pi
 USE_VIRTUAL_GYRO = False
 
 # Testing MPU without the cube
-USE_MPU_STREAM   = True
+USE_MPU_STREAM   = False
 MPU_STREAM_PORT = 5005
