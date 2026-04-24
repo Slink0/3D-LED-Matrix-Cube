@@ -1,194 +1,169 @@
-import numpy as np
-from config import (
-    CUBE_SIZE, FLUID_FILL_RATIO, PARTICLE_MASS, DAMPING,
-    VISCOSITY, PARTICLE_RADIUS, COLLISION_DAMPING,
-    SPATIAL_HASH_CELL_SIZE, SIMULATION_SPEED
-)
-
-
-class Particle:
-    __slots__ = ['position', 'velocity']
-
-    def __init__(self, position: np.ndarray):
-        self.position = position.astype(float)
-        self.velocity = np.zeros(3, dtype=float)
+import random
 
 
 class FluidSimulation:
-    def __init__(self):
+    def __init__(self, size=8, fill_ratio=0.35):
         """
-        Particle based fluid simulation operating in continuous 3D space.
-        The cube occupies [0, CUBE_SIZE-1] on all axes.
-        Particles are initialized randomly filling the bottom of the cube
-        based on FLUID_FILL_RATIO.
+        Cellular automaton fluid simulation using a continuous value grid.
+        Each cell holds a float 0.0-1.0 representing fluid amount.
+        Flow direction is driven by the gravity vector each step.
+
+        :param size:       Cube dimension (8 for 8x8x8)
+        :param fill_ratio: Fraction of cube volume to fill with fluid
         """
-        self.size = CUBE_SIZE
-        self.dt = SIMULATION_SPEED
-        self.bounds = float(self.size - 1)
-        self.diameter = PARTICLE_RADIUS * 2
+        self.size = size
+        self.fill_ratio = fill_ratio
 
-        total_voxels = self.size ** 3
-        self.num_particles = int(total_voxels * FLUID_FILL_RATIO)
+        # Continuous value grid — each cell is 0.0 (empty) to 1.0 (full)
+        self.grid = [[[0.0 for _ in range(size)]
+                           for _ in range(size)]
+                           for _ in range(size)]
 
-        self.particles = self._initialize_particles()
+        self._initialize()
 
     # ─── Initialization ────────────────────────────────────────────────────────
 
-    def _initialize_particles(self) -> list:
-        """
-        Place particles randomly within the lower portion of the cube
-        based on the fill ratio, with a small random initial velocity.
-        """
-        particles = []
-        fill_height = self.bounds * FLUID_FILL_RATIO * 3  # Scale fill height
+    def _initialize(self):
+        """Fill the bottom portion of the cube with fluid."""
+        fill_height = int(self.size * self.fill_ratio)
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(fill_height):
+                    self.grid[x][y][z] = 1.0
 
-        for _ in range(self.num_particles):
-            pos = np.array([
-                np.random.uniform(0, self.bounds),
-                np.random.uniform(0, self.bounds),
-                np.random.uniform(0, min(fill_height, self.bounds))
-            ])
-            p = Particle(pos)
-            p.velocity = np.random.uniform(-0.1, 0.1, 3)
-            particles.append(p)
+    # ─── Helpers ───────────────────────────────────────────────────────────────
 
-        return particles
+    def _in_bounds(self, x, y, z) -> bool:
+        return 0 <= x < self.size and 0 <= y < self.size and 0 <= z < self.size
 
-    # ─── Spatial Hashing ───────────────────────────────────────────────────────
-
-    def _hash_position(self, pos: np.ndarray) -> tuple:
-        """Convert a continuous position to a spatial hash cell key."""
-        return (
-            int(pos[0] / SPATIAL_HASH_CELL_SIZE),
-            int(pos[1] / SPATIAL_HASH_CELL_SIZE),
-            int(pos[2] / SPATIAL_HASH_CELL_SIZE)
-        )
-
-    def _build_spatial_hash(self) -> dict:
-        """
-        Build a spatial hash map of all particles for O(1) neighbor lookup.
-        Each cell key maps to a list of particles within that cell.
-        """
-        table = {}
-        for p in self.particles:
-            key = self._hash_position(p.position)
-            if key not in table:
-                table[key] = []
-            table[key].append(p)
-        return table
-
-    def _get_neighbors(self, p: Particle, table: dict) -> list:
-        """
-        Return all particles in the 27 neighboring cells around a particle.
-        This is the core of the spatial hashing optimization —
-        only nearby particles are checked for collision.
-        """
-        cx, cy, cz = self._hash_position(p.position)
-        neighbors = []
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                for dz in (-1, 0, 1):
-                    key = (cx + dx, cy + dy, cz + dz)
-                    if key in table:
-                        neighbors.extend(table[key])
-        return neighbors
-
-    # ─── Physics ───────────────────────────────────────────────────────────────
-
-    def _apply_gravity(self, p: Particle, gravity: np.ndarray):
-        """Apply gravitational acceleration to a particle's velocity."""
-        p.velocity += gravity * self.dt
-
-    def _apply_viscosity(self, p: Particle):
-        """Dampen velocity each frame to simulate fluid viscosity."""
-        p.velocity *= VISCOSITY
-        # Zero out velocity below resting threshold to prevent jitter
-        if np.linalg.norm(p.velocity) < 0.01:
-            p.velocity[:] = 0.0
-
-    def _update_position(self, p: Particle):
-        """Integrate velocity to update position."""
-        p.position += p.velocity * self.dt
-
-    def _resolve_wall_collisions(self, p: Particle):
-        """
-        Reflect velocity and clamp position when a particle hits a wall.
-        DAMPING controls how much energy is lost on impact.
-        """
-        for axis in range(3):
-            if p.position[axis] < 0:
-                p.position[axis] = 0.0
-                p.velocity[axis] = abs(p.velocity[axis]) * DAMPING
-            elif p.position[axis] > self.bounds:
-                p.position[axis] = self.bounds
-                p.velocity[axis] = -abs(p.velocity[axis]) * DAMPING
-
-    def _resolve_particle_collisions(self, p: Particle, neighbors: list):
-        """
-        Push overlapping particles apart with a gentle positional correction.
-        Velocity exchange is kept minimal to avoid introducing jitter energy.
-        """
-        for other in neighbors:
-            if other is p:
-                continue
-
-            delta = p.position - other.position
-            dist = np.linalg.norm(delta)
-
-            if dist < self.diameter and dist > 1e-6:
-                axis = delta / dist
-                overlap = self.diameter - dist
-
-                # Soft positional correction — only push halfway to avoid overcorrection
-                correction = axis * (overlap / 2) * 0.5
-                p.position += correction
-                other.position -= correction
-
-                # Only bleed off velocity along the collision axis, don't add energy
-                rel_vel = np.dot(p.velocity - other.velocity, axis)
-                if rel_vel < 0:
-                    impulse = axis * rel_vel * 0.3
-                    p.velocity -= impulse
-                    other.velocity += impulse
+    def _clamp(self, val, lo=0.0, hi=1.0) -> float:
+        return max(lo, min(hi, val))
 
     # ─── Simulation Step ───────────────────────────────────────────────────────
 
-    def step(self, gravity: np.ndarray):
+    def step(self, gravity):
         """
-        Advance the simulation by one time step.
+        Advance the simulation by one step using the gravity vector.
 
-        :param gravity: 3D gravity vector from GravityVector.get()
-                        e.g. np.array([0.0, 0.0, -9.8]) for straight down
+        Flow rules:
+        1. Each cell with fluid tries to move in the gravity direction,
+           proportional to how strongly gravity pulls that way.
+        2. If the target cell is already full, fluid spreads sideways
+           along the plane perpendicular to gravity.
+        3. A small random lateral spread is applied each frame to
+           simulate surface tension breaking down and fluid finding gaps.
+
+        :param gravity: List or array of [gx, gy, gz]
         """
-        spatial_hash = self._build_spatial_hash()
+        gx, gy, gz = gravity[0], gravity[1], gravity[2]
 
-        for p in self.particles:
-            self._apply_gravity(p, gravity)
-            self._apply_viscosity(p)
-            self._update_position(p)
-            self._resolve_wall_collisions(p)
-            neighbors = self._get_neighbors(p, spatial_hash)
-            self._resolve_particle_collisions(p, neighbors)
+        # Normalize gravity to get flow weights per axis
+        mag = abs(gx) + abs(gy) + abs(gz) + 1e-6
+        gx_n = gx / mag
+        gy_n = gy / mag
+        gz_n = gz / mag
 
-        # Clamp all positions after collision resolution
-        for p in self.particles:
-            p.position = np.clip(p.position, 0.0, self.bounds)
+        # Build list of (dx, dy, dz, weight) for each gravity direction
+        # Only directions with positive weight (i.e. gravity pulls that way)
+        directions = []
+        for dx, dy, dz, w in [
+            (1, 0, 0,  gx_n), (-1, 0, 0, -gx_n),
+            (0, 1, 0,  gy_n), (0, -1, 0, -gy_n),
+            (0, 0, 1,  gz_n), (0,  0, -1, -gz_n),
+        ]:
+            if w > 0.01:
+                directions.append((dx, dy, dz, w))
 
-    # ─── Rendering ─────────────────────────────────────────────────────────────
+        # Sort by strongest gravity pull first
+        directions.sort(key=lambda d: d[3], reverse=True)
 
-    def get_voxels(self) -> set:
+        # Sideways spread directions (perpendicular to dominant gravity)
+        spread_dirs = [(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1)]
+
+        # New grid starts as a copy of current
+        new_grid = [[[self.grid[x][y][z]
+                      for z in range(self.size)]
+                      for y in range(self.size)]
+                      for x in range(self.size)]
+
+        # Shuffle iteration order slightly to avoid directional bias
+        order = list(range(self.size))
+
+        for x in order:
+            for y in order:
+                for z in order:
+                    amount = self.grid[x][y][z]
+                    if amount < 0.01:
+                        continue
+
+                    moved = False
+
+                    # Try to flow in each gravity direction
+                    for dx, dy, dz, weight in directions:
+                        nx, ny, nz = x + dx, y + dy, z + dz
+
+                        if not self._in_bounds(nx, ny, nz):
+                            continue
+
+                        # How much space is available in the target cell
+                        space = 1.0 - new_grid[nx][ny][nz]
+                        if space < 0.01:
+                            continue
+
+                        # Flow proportional to gravity weight and available space
+                        flow = self._clamp(amount * weight * 0.6, 0.0, min(amount, space))
+
+                        new_grid[nx][ny][nz] += flow
+                        new_grid[x][y][z]    -= flow
+                        amount               -= flow
+                        moved = True
+
+                        if amount < 0.01:
+                            break
+
+                    # Sideways spread — fluid fills gaps laterally
+                    if amount > 0.05:
+                        random.shuffle(spread_dirs)
+                        for dx, dy, dz in spread_dirs:
+                            nx, ny, nz = x + dx, y + dy, z + dz
+
+                            if not self._in_bounds(nx, ny, nz):
+                                continue
+
+                            space = 1.0 - new_grid[nx][ny][nz]
+                            if space < 0.01:
+                                continue
+
+                            spread = self._clamp(amount * 0.08, 0.0, min(amount, space))
+                            new_grid[nx][ny][nz] += spread
+                            new_grid[x][y][z]    -= spread
+                            amount               -= spread
+
+                            if amount < 0.01:
+                                break
+
+        # Clamp all values and commit new grid
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    self.grid[x][y][z] = self._clamp(new_grid[x][y][z])
+
+    # ─── Output ────────────────────────────────────────────────────────────────
+
+    def get_voxels(self):
         """
-        Convert continuous particle positions to integer voxel coordinates.
-        Returns a set of (x, y, z) tuples representing lit LEDs.
-        Multiple particles in the same voxel count as one lit LED.
+        Convert the continuous grid to a binary 8x8x8 list for LED output.
+        Cells above the threshold are considered lit.
+
+        :return: 8x8x8 list of 0s and 1s
         """
-        voxels = set()
-        for p in self.particles:
-            x = int(round(p.position[0]))
-            y = int(round(p.position[1]))
-            z = int(round(p.position[2]))
-            x = np.clip(x, 0, self.size - 1)
-            y = np.clip(y, 0, self.size - 1)
-            z = np.clip(z, 0, self.size - 1)
-            voxels.add((x, y, z))
-        return voxels
+        threshold = 0.25
+        cube = [[[0] * self.size for _ in range(self.size)] for _ in range(self.size)]
+
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    if self.grid[x][y][z] >= threshold:
+                        cube[x][y][z] = 1
+
+        return cube

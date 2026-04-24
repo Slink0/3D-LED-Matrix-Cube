@@ -1,6 +1,13 @@
 import time
 import numpy as np
 
+try:
+    import RPi.GPIO as GPIO
+
+    HARDWARE_AVAILABLE = True
+except ImportError:
+    HARDWARE_AVAILABLE = False
+
 from hardware.ShiftRegister import ShiftRegister
 from config import LAYER_DELAY
 
@@ -29,7 +36,37 @@ class Renderer:
             self.sr.write_columns(data)
             self._prev_layer = z
             time.sleep(LAYER_DELAY)
+    def render_voxels(self, cube):
+        """
+        Multiplex through all 8 layers using a voxel list (nested lists).
+        Uses faster byte packing based on Nic's implementation.
+        :param cube: 8x8x8 nested list of LED states (1 = on, 0 = off)
+        """
+        for z in range(8):
+            data = self._voxels_to_bytes(cube, z)
+            self.sr.all_layers_off()
+            self.sr.write_columns(data)
+            GPIO.output(self.sr.layer_pins[z], 1)
+            time.sleep(LAYER_DELAY)
 
+    @staticmethod
+    def _voxels_to_bytes(cube, z) -> list:
+        """
+        Faster byte packing for nested list voxel format.
+        Packs each row of 8 x-values into a single byte.
+
+        :param cube: 8x8x8 nested list
+        :param z:    Layer index
+        :return:     List of 8 bytes
+        """
+        data = [0] * 8
+        for y in range(8):
+            byte = 0
+            for x in range(8):
+                if cube[x][y][z]:
+                    byte |= (1 << x)
+            data[7 - y] = byte
+        return data
     def clear(self):
         """Turn off all LEDs."""
         self.sr.clear()

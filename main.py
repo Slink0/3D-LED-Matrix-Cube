@@ -58,8 +58,12 @@ def run_fluid_visualizer(cube, sim, gravity):
     """
     sim.step(gravity.get())
     cube.clear()
-    for (x, y, z) in sim.get_voxels():
-        cube.set_led(x, y, z, True)
+    voxels = sim.get_voxels()
+    for x in range(8):
+        for y in range(8):
+            for z in range(8):
+                if voxels[x][y][z]:
+                    cube.set_led(x, y, z, True)
 
 
 def run_fluid_pi(sim, gravity):
@@ -142,7 +146,6 @@ def main():
         renderer = Renderer()
 
         if not RUN_FLUID:
-            # Run a hardware test pattern then exit
             renderer.test_layer_sweep()
             renderer.cleanup()
             return
@@ -150,11 +153,29 @@ def main():
         sim = FluidSimulation()
         gravity, mpu, mpu_receive = setup_gravity()
 
+        # Low pass filter state for smooth gravity
+        prev_g = [0.0, 0.0, -9.8]
+        alpha = 0.2  # smoothing factor — lower = smoother but slower to respond
+
+        def get_smooth_gravity():
+            update_gravity(gravity, mpu, mpu_receive)
+            g = gravity.get()
+            prev_g[0] = prev_g[0] * (1 - alpha) + g[0] * alpha
+            prev_g[1] = prev_g[1] * (1 - alpha) + g[1] * alpha
+            prev_g[2] = prev_g[2] * (1 - alpha) + g[2] * alpha
+            return prev_g[:]
+
         try:
             while True:
-                update_gravity(gravity, mpu, mpu_receive)
-                grid = run_fluid_pi(sim, gravity)
-                renderer.render(grid)
+                # Get smoothed gravity and step simulation once
+                g = get_smooth_gravity()
+                sim.step(g)
+                cube = sim.get_voxels()
+
+                # Render the same frame 20 times to keep display solid
+                # while simulation computes next frame
+                for _ in range(20):
+                    renderer.render_voxels(cube)
 
         except KeyboardInterrupt:
             print("\n[main] Shutting down.")

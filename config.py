@@ -29,10 +29,10 @@ COLLISION_DAMPING = 0.8
 # size for spatial hashing grid
 SPATIAL_HASH_CELL_SIZE = 1.0
 
-RUN_ON_PI = True
+RUN_ON_PI = False
 
 # Set True to use visualizer rotation as gyro input false for pi
-USE_VIRTUAL_GYRO = False
+USE_VIRTUAL_GYRO = True
 
 # Testing MPU without the cube
 USE_MPU_STREAM   = False
