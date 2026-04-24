@@ -104,7 +104,7 @@ class FluidSimulation:
                         if space < 0.01:
                             continue
 
-                        flow = self._clamp(amount * weight * 0.6, 0.0, min(amount, space))
+                        flow = self._clamp(amount * weight * 0.9, 0.0, min(amount, space))
 
                         new_grid[nx][ny][nz] += flow
                         new_grid[x][y][z]    -= flow
@@ -126,7 +126,7 @@ class FluidSimulation:
                             if space < 0.01:
                                 continue
 
-                            spread = self._clamp(amount * 0.08, 0.0, min(amount, space))
+                            spread = self._clamp(amount * 0.15, 0.0, min(amount, space))
                             new_grid[nx][ny][nz] += spread
                             new_grid[x][y][z]    -= spread
                             amount               -= spread
