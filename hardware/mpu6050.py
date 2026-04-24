@@ -12,6 +12,8 @@ _REG_ACCEL_CONFIG = 0x1C
 # Sensitivity scale factors (datasheet values)
 _ACCEL_SCALE = 16384.0  # LSB/g  for ±2g range
 _GYRO_SCALE  = 131.0    # LSB/(°/s) for ±250°/s range
+ACCEL_ROLL_OFFSET = 1.9
+ACCEL_PITCH_OFFSET = 10.5
 
 
 class MPU6050:
@@ -116,7 +118,7 @@ class MPU6050:
         """
         roll  = np.degrees(np.arctan2(ay, az))
         pitch = np.degrees(np.arctan2(-ax, np.sqrt(ay**2 + az**2)))
-        return roll, pitch
+        return roll - ACCEL_ROLL_OFFSET, pitch - ACCEL_PITCH_OFFSET
 
     def update(self):
         """
