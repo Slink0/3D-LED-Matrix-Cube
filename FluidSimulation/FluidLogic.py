@@ -21,9 +21,11 @@ class FluidSimulation:
     # ─── Initialization ────────────────────────────────────────────────────────
 
     def _initialize(self):
-        """Fill the bottom portion of the cube with fluid."""
+        """Fill the bottom portion of the cube with fluid, leaving room to move."""
         fill_height = int(self.size * self.fill_ratio)
-        self.grid[:, :, :fill_height] = 1.0
+        # Use 0.8 instead of 1.0 so cells aren't completely full
+        # and fluid has room to flow between cells
+        self.grid[:, :, :fill_height] = 0.8
 
     # ─── Simulation Step ───────────────────────────────────────────────────────
 
