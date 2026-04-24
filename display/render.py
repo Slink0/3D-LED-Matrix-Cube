@@ -3,7 +3,6 @@ import numpy as np
 
 try:
     import RPi.GPIO as GPIO
-
     HARDWARE_AVAILABLE = True
 except ImportError:
     HARDWARE_AVAILABLE = False
@@ -25,9 +24,7 @@ class Renderer:
 
     def render(self, cube):
         """
-        Multiplex through all 8 layers of the cube, displaying each one
-        briefly. Call this in a tight loop to produce a solid looking display.
-
+        Multiplex through all 8 layers of the cube.
         :param cube: 8x8x8 numpy array of LED states (1 = on, 0 = off)
         """
         for z in range(8):
@@ -36,6 +33,7 @@ class Renderer:
             self.sr.write_columns(data)
             self._prev_layer = z
             time.sleep(LAYER_DELAY)
+
     def render_voxels(self, cube):
         """
         Multiplex through all 8 layers using a voxel list (nested lists).
@@ -67,6 +65,7 @@ class Renderer:
                     byte |= (1 << x)
             data[7 - y] = byte
         return data
+
     def clear(self):
         """Turn off all LEDs."""
         self.sr.clear()
@@ -77,35 +76,68 @@ class Renderer:
 
     # ─── Test Patterns ─────────────────────────────────────────────────────────
 
-    def test_layer_sweep(self, cycles: int = 3):
+    def test_layer_sweep(self):
         """
         Light up one full layer at a time, sweeping from bottom to top.
-
-        :param cycles: Number of full sweeps to perform
+        Loops indefinitely until Ctrl+C.
         """
-        for _ in range(cycles):
-            for z in range(8):
-                cube = np.zeros((8, 8, 8), dtype=np.uint8)
-                cube[:, :, z] = 1
-                for _ in range(50):  # Hold each layer for 50 render passes
-                    self.render(cube)
+        print("[Renderer] Running layer sweep — Ctrl+C to stop.")
+        try:
+            while True:
+                for z in range(8):
+                    cube = np.zeros((8, 8, 8), dtype=np.uint8)
+                    cube[:, :, z] = 1
+                    for _ in range(50):
+                        self.render(cube)
+        except KeyboardInterrupt:
+            pass
 
-    def test_fill_and_clear(self, cycles: int = 3):
+    def test_fill_and_clear(self):
         """
         Alternate between fully lit and fully dark.
-
-        :param cycles: Number of on/off cycles
+        Loops indefinitely until Ctrl+C.
         """
-        for _ in range(cycles):
-            cube = np.ones((8, 8, 8), dtype=np.uint8)
-            for _ in range(100):
-                self.render(cube)
-            cube = np.zeros((8, 8, 8), dtype=np.uint8)
-            for _ in range(100):
-                self.render(cube)
+        print("[Renderer] Running fill and clear — Ctrl+C to stop.")
+        try:
+            while True:
+                cube = np.ones((8, 8, 8), dtype=np.uint8)
+                for _ in range(100):
+                    self.render(cube)
+                cube = np.zeros((8, 8, 8), dtype=np.uint8)
+                for _ in range(100):
+                    self.render(cube)
+        except KeyboardInterrupt:
+            pass
 
     def test_single_led(self):
-        """Step a single LED through every position in the cube sequentially."""
+        """Step a single LED through every position in the cube sequentially.
+        Loops indefinitely until Ctrl+C.
+        """
+        print("[Renderer] Running single LED — Ctrl+C to stop.")
+        try:
+            while True:
+                for x in range(8):
+                    for y in range(8):
+                        for z in range(8):
+                            cube = np.zeros((8, 8, 8), dtype=np.uint8)
+                            cube[x][y][z] = 1
+                            for _ in range(20):
+                                self.render(cube)
+        except KeyboardInterrupt:
+            pass
+
+    def test_sequence(self):
+        """
+        Runs a full demo sequence:
+        1. Single LED stepping through a few positions
+        2. Fill and clear a few times
+        3. Layer sweep a few times
+        4. Wave until Ctrl+C
+        """
+        print("[Renderer] Running test sequence — Ctrl+C to stop wave at end.")
+
+        # Single LED — step through every position once
+        print("[Renderer] Single LED...")
         for x in range(8):
             for y in range(8):
                 for z in range(8):
@@ -114,24 +146,61 @@ class Renderer:
                     for _ in range(20):
                         self.render(cube)
 
-    def test_wave(self, duration: float = 10.0):
-        """
-        Display a sine wave animation across the cube surface.
+        # Fill and clear — 3 times
+        print("[Renderer] Fill and clear...")
+        for _ in range(3):
+            cube = np.ones((8, 8, 8), dtype=np.uint8)
+            for _ in range(100):
+                self.render(cube)
+            cube = np.zeros((8, 8, 8), dtype=np.uint8)
+            for _ in range(100):
+                self.render(cube)
 
-        :param duration: How long to run the wave in seconds
-        """
+        # Layer sweep — 3 full sweeps
+        print("[Renderer] Layer sweep...")
+        for _ in range(3):
+            for z in range(8):
+                cube = np.zeros((8, 8, 8), dtype=np.uint8)
+                cube[:, :, z] = 1
+                for _ in range(50):
+                    self.render(cube)
+
+        # Wave — until Ctrl+C
+        print("[Renderer] Wave — Ctrl+C to stop.")
         x_vals = (np.arange(8) / 7) * 2 * np.pi
         y_vals = (np.arange(8) / 7) * 2 * np.pi
         t = 0
-        start = time.time()
-
-        while time.time() - start < duration:
-            cube = np.zeros((8, 8, 8), dtype=np.uint8)
-            for x in range(8):
-                for y in range(8):
-                    z_real = (np.sin((x_vals[x] + t) * 0.5) * np.cos((y_vals[y] + t) * 0.5)) * 1.2
-                    z = int((z_real + 1) * 3.5)
-                    z = np.clip(z, 0, 7)
-                    cube[x][y][z] = 1
-            t += 0.01
-            self.render(cube)
+        try:
+            while True:
+                cube = np.zeros((8, 8, 8), dtype=np.uint8)
+                for x in range(8):
+                    for y in range(8):
+                        z_real = (np.sin((x_vals[x] + t) * 0.5) * np.cos((y_vals[y] + t) * 0.5)) * 1.2
+                        z = int((z_real + 1) * 3.5)
+                        z = np.clip(z, 0, 7)
+                        cube[x][y][z] = 1
+                t += 0.01
+                self.render(cube)
+        except KeyboardInterrupt:
+            pass
+        """
+        Display a sine wave animation across the cube surface.
+        Loops indefinitely until Ctrl+C.
+        """
+        print("[Renderer] Running wave — Ctrl+C to stop.")
+        x_vals = (np.arange(8) / 7) * 2 * np.pi
+        y_vals = (np.arange(8) / 7) * 2 * np.pi
+        t = 0
+        try:
+            while True:
+                cube = np.zeros((8, 8, 8), dtype=np.uint8)
+                for x in range(8):
+                    for y in range(8):
+                        z_real = (np.sin((x_vals[x] + t) * 0.5) * np.cos((y_vals[y] + t) * 0.5)) * 1.2
+                        z = int((z_real + 1) * 3.5)
+                        z = np.clip(z, 0, 7)
+                        cube[x][y][z] = 1
+                t += 0.01
+                self.render(cube)
+        except KeyboardInterrupt:
+            pass

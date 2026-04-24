@@ -133,9 +133,6 @@ def update_gravity(gravity, mpu, mpu_receive, visualizer=None):
 # Set to True to run the fluid simulation, False to run a test pattern
 RUN_FLUID = False
 
-# Swap out the test pattern here to try different ones
-ACTIVE_TEST = test_layer_sweep
-
 
 def main():
     from FluidSimulation.FluidLogic import FluidSimulation
@@ -146,7 +143,7 @@ def main():
         renderer = Renderer()
 
         if not RUN_FLUID:
-            renderer.test_wave()
+            renderer.test_layer_sweep()
             renderer.cleanup()
             return
 
@@ -201,7 +198,7 @@ def main():
                 run_fluid_visualizer(cube, sim, gravity)
         else:
             def update(frame):
-                ACTIVE_TEST(cube, frame)
+                test_layer_sweep(cube, frame)
 
         visualizer.run(update_fn=update)
 
