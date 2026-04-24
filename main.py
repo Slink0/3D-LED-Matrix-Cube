@@ -1,8 +1,3 @@
-import matplotlib
-matplotlib.use('TkAgg')
-
-from display.cube import Cube
-from visualize.VisualizeCube import VisualizeCube
 from config import USE_VIRTUAL_GYRO, USE_MPU_STREAM, RUN_ON_PI
 
 # ─── Test Patterns ─────────────────────────────────────────────────────────────
@@ -132,7 +127,7 @@ def update_gravity(gravity, mpu, mpu_receive, visualizer=None):
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
 # Set to True to run the fluid simulation, False to run a test pattern
-RUN_FLUID = False
+RUN_FLUID = True
 
 # Swap out the test pattern here to try different ones
 ACTIVE_TEST = test_layer_sweep
@@ -168,6 +163,11 @@ def main():
 
     else:
         # ── Visualizer mode on PC ──────────────────────────────────────────────
+        import matplotlib
+        matplotlib.use('TkAgg')
+        from display.cube import Cube
+        from visualize.VisualizeCube import VisualizeCube
+
         cube = Cube()
         visualizer = VisualizeCube(cube)
 
