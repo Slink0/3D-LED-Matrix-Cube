@@ -105,7 +105,7 @@ def setup_gravity(visualizer=None):
             from hardware.mpu6050 import MPU6050
             mpu = MPU6050()
             mpu.connect()
-            mpu.calibrate()
+            mpu.calibrate(samples=500)
         except Exception as e:
             print(f"[main] MPU6050 unavailable: {e}")
             print("[main] Falling back to fixed gravity vector.")
@@ -151,7 +151,7 @@ def main():
 
         # Low pass filter state for smooth gravity
         prev_g = [0.0, 0.0, -9.8]
-        alpha = 0.8  # smoothing factor — lower = smoother but slower to respond
+        alpha = 0.7  # smoothing factor — lower = smoother but slower to respond
 
         def get_smooth_gravity():
             update_gravity(gravity, mpu, mpu_receive)

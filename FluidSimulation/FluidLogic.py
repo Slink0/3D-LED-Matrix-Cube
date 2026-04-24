@@ -2,7 +2,7 @@ import random
 
 
 class FluidSimulation:
-    def __init__(self, size=8, fill_ratio=0.35):
+    def __init__(self, size=8, fill_ratio=0.375):
         """
         Cellular automaton fluid simulation using a continuous value grid.
         Each cell holds a float 0.0-1.0 representing fluid amount.
