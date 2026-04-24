@@ -2,16 +2,13 @@ import spidev
 import RPi.GPIO as GPIO
 import time
 
-from FluidSimulation.FluidLogic import FluidSimulation
-from FluidSimulation.gravity import GravityVector
+from hardware.FluidSimulation import GravityVector
 
 from mpu6050 import MPU6050
 
 mpu = MPU6050()
 mpu.connect()
 mpu.calibrate()
-
-import random
 
 # Simple low-pass filter
 prev_g = [0.0, 0.0, -1.0]

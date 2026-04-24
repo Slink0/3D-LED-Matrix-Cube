@@ -81,8 +81,8 @@ ACTIVE_TEST = test_layer_sweep
 
 
 def main():
-    from FluidSimulation.FluidLogic import FluidSimulation
-    from FluidSimulation.gravity import GravityVector
+    from hardware.FluidSimulation import FluidSimulation
+    from hardware.FluidSimulation import GravityVector
 
     cube = Cube()
     visualizer = VisualizeCube(cube)

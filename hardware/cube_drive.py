@@ -2,8 +2,8 @@ import spidev
 import RPi.GPIO as GPIO
 import time
 import numpy as np
-from FluidSimulation.FluidLogic import FluidSimulation
-from FluidSimulation.gravity import GravityVector
+from hardware.FluidSimulation import FluidSimulation
+from hardware.FluidSimulation import GravityVector
 
 
 # CONFIG

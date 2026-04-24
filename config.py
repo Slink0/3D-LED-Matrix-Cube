@@ -8,9 +8,6 @@ LATCH_PIN = None
 
 MPU6050_ADDRESS = 0x68
 
-GRAVITY = 9.8
-SIMULATION_SPEED = 0.20
-
 # Dark grey when off and blue when on
 LED_OFF_COLOR = (0.15, 0.15, 0.15)
 LED_ON_COLOR = (0.1, 0.4, 1.0)
