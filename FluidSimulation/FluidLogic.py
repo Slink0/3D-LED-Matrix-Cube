@@ -74,7 +74,7 @@ class FluidSimulation:
 
             # Flow is limited by available space in target and amount in source
             space = np.maximum(0.0, 1.0 - tgt)
-            flow = np.minimum(src * w * 0.6, space)
+            flow = np.minimum(src * w * 0.9, space)
             flow = np.maximum(flow, 0.0)
 
             new_grid[tx, ty, tz] += flow
@@ -94,7 +94,7 @@ class FluidSimulation:
             tgt = new_grid[tx, ty, tz]
 
             space = np.maximum(0.0, 1.0 - tgt)
-            spread = np.minimum(src * 0.05, space)
+            spread = np.minimum(src * 0.1, space)
             spread = np.maximum(spread, 0.0)
 
             new_grid[tx, ty, tz] += spread

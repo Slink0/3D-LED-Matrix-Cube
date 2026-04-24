@@ -165,6 +165,7 @@ def main():
             while True:
                 # Get smoothed gravity and step simulation once
                 g = get_smooth_gravity()
+                print(g)
                 sim.step(g)
                 cube = sim.get_voxels()
 
