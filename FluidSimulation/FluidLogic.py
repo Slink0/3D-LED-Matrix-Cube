@@ -29,10 +29,8 @@ class FluidSimulation:
 
     def step(self, gravity):
         """
-        Advance the simulation by one step using numpy slice operations.
-        Each axis-aligned direction is processed in order of gravity strength.
-        Fluid flows into neighboring cells proportional to gravity weight
-        and available space.
+        Advance the simulation by one step.
+        Processes each axis sequentially so fluid can propagate properly.
 
         :param gravity: List or array of [gx, gy, gz]
         """
@@ -45,7 +43,7 @@ class FluidSimulation:
         gy_n = gy / mag
         gz_n = gz / mag
 
-        # Build direction list sorted by strongest gravity pull first
+        # Process each direction sequentially — strongest first
         directions = [
             ((1, 0, 0),  gx_n),  ((-1, 0, 0), -gx_n),
             ((0, 1, 0),  gy_n),  ((0, -1, 0), -gy_n),
@@ -53,34 +51,35 @@ class FluidSimulation:
         ]
         directions.sort(key=lambda d: -d[1])
 
-        new_grid = self.grid.copy()
-
         for (dx, dy, dz), w in directions:
             if w <= 0.01:
                 continue
 
-            # Source slice — cells that have fluid to give
-            sx = slice(max(0, -dx), self.size - max(0, dx))
-            sy = slice(max(0, -dy), self.size - max(0, dy))
-            sz = slice(max(0, -dz), self.size - max(0, dz))
+            # Iterate sequentially in the flow direction so fluid cascades
+            x_range = range(self.size) if dx >= 0 else range(self.size - 1, -1, -1)
+            y_range = range(self.size) if dy >= 0 else range(self.size - 1, -1, -1)
+            z_range = range(self.size) if dz >= 0 else range(self.size - 1, -1, -1)
 
-            # Target slice — cells that receive fluid
-            tx = slice(max(0, dx), self.size - max(0, -dx))
-            ty = slice(max(0, dy), self.size - max(0, -dy))
-            tz = slice(max(0, dz), self.size - max(0, -dz))
+            for x in x_range:
+                for y in y_range:
+                    for z in z_range:
+                        amount = self.grid[x, y, z]
+                        if amount < 0.01:
+                            continue
 
-            src = new_grid[sx, sy, sz]
-            tgt = new_grid[tx, ty, tz]
+                        nx, ny, nz = x + dx, y + dy, z + dz
+                        if not (0 <= nx < self.size and 0 <= ny < self.size and 0 <= nz < self.size):
+                            continue
 
-            # Flow is limited by available space in target and amount in source
-            space = np.maximum(0.0, 1.0 - tgt)
-            flow = np.minimum(src * w * 0.9, space)
-            flow = np.maximum(flow, 0.0)
+                        space = 1.0 - self.grid[nx, ny, nz]
+                        if space < 0.01:
+                            continue
 
-            new_grid[tx, ty, tz] += flow
-            new_grid[sx, sy, sz] -= flow
+                        flow = min(amount * w * 0.8, space, amount)
+                        self.grid[nx, ny, nz] += flow
+                        self.grid[x, y, z] -= flow
 
-        # Lateral spread — fluid fills gaps sideways
+        # Lateral spread using slices — fast numpy operation
         spread_dirs = [(1,0,0),(-1,0,0),(0,1,0),(0,-1,0)]
         for dx, dy, dz in spread_dirs:
             sx = slice(max(0, -dx), self.size - max(0, dx))
@@ -90,17 +89,14 @@ class FluidSimulation:
             ty = slice(max(0, dy), self.size - max(0, -dy))
             tz = slice(max(0, dz), self.size - max(0, -dz))
 
-            src = new_grid[sx, sy, sz]
-            tgt = new_grid[tx, ty, tz]
-
-            space = np.maximum(0.0, 1.0 - tgt)
-            spread = np.minimum(src * 0.1, space)
+            space = np.maximum(0.0, 1.0 - self.grid[tx, ty, tz])
+            spread = np.minimum(self.grid[sx, sy, sz] * 0.08, space)
             spread = np.maximum(spread, 0.0)
 
-            new_grid[tx, ty, tz] += spread
-            new_grid[sx, sy, sz] -= spread
+            self.grid[tx, ty, tz] += spread
+            self.grid[sx, sy, sz] -= spread
 
-        self.grid = np.clip(new_grid, 0.0, 1.0)
+        np.clip(self.grid, 0.0, 1.0, out=self.grid)
 
     # ─── Output ────────────────────────────────────────────────────────────────
 

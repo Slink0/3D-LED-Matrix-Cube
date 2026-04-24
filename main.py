@@ -151,7 +151,7 @@ def main():
 
         # Low pass filter state for smooth gravity
         prev_g = [0.0, 0.0, -9.8]
-        alpha = 0.2  # smoothing factor — lower = smoother but slower to respond
+        alpha = 0.8  # smoothing factor — lower = smoother but slower to respond
 
         def get_smooth_gravity():
             update_gravity(gravity, mpu, mpu_receive)
